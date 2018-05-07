@@ -12,7 +12,7 @@ def read_sites(path):
 
 def start_chrome(chrome_path, remote_debugging_port):
 #	cmd = f'/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --user-data-dir=/tmp/chrome  --proxy-server="localhost:8080"  --enable-quic --remote-debugging-port={remote_debugging_port} --headless  --proxy-server="quic://rodrigo918.hopto.org:443"'
-	cmd = f'{chrome_path} --enable-quic --headless --proxy-server="localhost:8080"'
+	cmd = f'{chrome_path} --enable-quic --headless --remote-debugging-port={remote_debugging_port} --proxy-server="localhost:8080"'
 
 	p  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 #	p.communicate()
