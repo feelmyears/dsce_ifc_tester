@@ -5,15 +5,16 @@ import argparse
 import subprocess
 from time import sleep
 from urllib.parse import urlparse
+from pdb import set_trace as bp
 
 def read_sites(path):
 	with open(path, 'r') as f:
 		return [url.strip() for url in f.readlines()]
 
-def start_chrome(chrome_path, remote_debugging_port):
+def start_chrome(chrome_path, proxy_port, remote_debugging_port):
 #	cmd = f'/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --user-data-dir=/tmp/chrome  --proxy-server="localhost:8080"  --enable-quic --remote-debugging-port={remote_debugging_port} --headless  --proxy-server="quic://rodrigo918.hopto.org:443"'
-	cmd = f'{chrome_path} --enable-quic --headless --proxy-server="localhost:8080"'
-
+	# cmd = f'/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --user-data-dir=/tmp/chrome --enable-quic --proxy-server="127.0.0.1:18443" www.google.com'
+	cmd = f'{chrome_path} --user-data-dir=/tmp/chrome  --headless --enable-quic --proxy-server="localhost:{proxy_port}" --remote-debugging-port={remote_debugging_port}'
 	p  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 #	p.communicate()
 	return p
@@ -35,17 +36,27 @@ if __name__ == "__main__":
 	parser.add_argument('--output', '-o', help="Dir to save har files", type=str)
 	args = parser.parse_args()
 
-	output_dir = args.output
+	# output_dir = args.output
+	output_dir = "output/"
 	ensure_dir(output_dir)
 
 	test_urls = read_sites(args.sites)
-	for i, url in enumerate(test_urls):
-		hostname = urlparse(url).hostname.split('.')[1]
+	test_protocols = [('quic', 18443), ('tcp', 18080)]
+	# test_protocols = [('tcp', 18080)]
+	for protocol, port in test_protocols:
+		for i, url in enumerate(test_urls):
+			hostname_parts = urlparse(url).hostname.split('.')
+			hostname = None
+			if len(hostname_parts) > 2:
+				hostname = hostname_parts[1]
+			else:
+				hostname = hostname_parts[0]
+			
+			p_browser = start_chrome(args.chrome, port, 9222)
+			sleep(3)
+			print(f"Capturing HAR for {hostname} using protocol {protocol}")
+			p_har = capture_har(os.path.join(output_dir, f'{i}_{hostname}_{protocol}.har'), url)
+			p_har.wait()
 
-		p_browser = start_chrome(args.chrome, 9222)
-		sleep(3)
-		p_har = capture_har(os.path.join(output_dir, f'{i}_{hostname}.har'), url)
-		sleep(10)
-
-		p_har.kill()
-		p_browser.kill()
+			p_browser.kill()
+			sleep(5)
