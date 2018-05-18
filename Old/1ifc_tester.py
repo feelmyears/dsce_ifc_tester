@@ -18,7 +18,7 @@ def start_chrome(chrome_path, proxy_port, remote_debugging_port, enable_quic=Tru
 	if enable_quic:
 		quic_flag = '--enable-quic'
 
-	cmd = f'{chrome_path} --user-data-dir=/tmp/chrome  --headless {enable_quic} --proxy-server="localhost:{proxy_port}" --remote-debugging-port={remote_debugging_port}'
+	cmd = f'{chrome_path} --user-data-dir=/tmp/chrome  --headless --remote-debugging-port={remote_debugging_port}'
 	p  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 #	p.communicate()
 	return p
@@ -39,14 +39,14 @@ if __name__ == "__main__":
 	parser.add_argument('--chrome', '-c', help="Path to Chrome installation", type=str)
 	parser.add_argument('--output', '-o', help="Dir to save har files", type=str)
 	parser.add_argument('--repeat', '-r', help="Dir to save har files", type=int, default=5)
-	args = parser.parse_args()s
+	args = parser.parse_args()
 
 	# output_dir = args.output
 	output_dir = "output/"
 	ensure_dir(output_dir)
 
 	test_urls = read_sites(args.sites)
-	test_protocols = [('quic', 18443), ('tcp', 18080)]
+	test_protocols = [('tcp', 80)]
 	# test_protocols = [('tcp', 18080)]
 	for i, url in enumerate(test_urls):
 		for r in range(1, args.repeat+1):
