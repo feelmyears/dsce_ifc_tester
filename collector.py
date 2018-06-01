@@ -50,14 +50,16 @@ class TestConfig:
 		# SSH into router
 		# Reset service degradation  settings
 		# Set service degration to desired settings
-		if self.service_config == ServiceConfig.NORMAL:
-			pass
-		elif self.service_config == ServiceConfig.DA2GC:
-			pass
-		elif self.service_config == ServiceConfig.MSS:
-			pass
-		else:
-			raise Exception('Unrecognized router configuration provided!')
+		# if self.service_config == ServiceConfig.NORMAL:
+			# pass
+		# elif self.service_config == ServiceConfig.DA2GC:
+			# pass
+		# elif self.service_config == ServiceConfig.MSS:
+			# pass
+		# else:
+			# raise Exception('Unrecognized router configuration provided!')
+
+		pass
 
 
 	def configure_chrome(self, chrome_path, remote_debugging_port):
@@ -127,7 +129,7 @@ class TestRunner:
 		for attempt in range(self.max_attempts):
 			test_config.configure_router(self.router)
 			chrome = test_config.configure_chrome(self.chrome_path, self.remote_debugging_port)
-			sleep(3)
+			sleep(1)
 
 			har_capturer = self.capture_har(site, output_path)
 			success = False
@@ -137,7 +139,6 @@ class TestRunner:
 			except:
 				print(f'Failed attempt #{attempt} for test <{service}, {proxy}, {run_index}>')
 
-			sleep(5)
 			chrome.kill()
 			if success is not True:
 				continue
