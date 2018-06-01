@@ -9,32 +9,37 @@ import configparser
 from time import sleep
 import csv
 
+# class ProxyConfig(Enum):
+# 	BYPASS_PROXY_HTTPS 	= 0		# Client 				->  (bypass)ProxyClient -> ***  HTTPS  ***  ->  (bypass)ProxyServer -> WebServer
+# 	BYPASS_PROXY_QUIC 	= 1		# Client(QUIC Request) 	->  (bypass)ProxyClient -> ***  QUIC   ***  ->  (bypass)ProxyServer -> WebServer
+# 	HTTP_PROXY_HTTPS 	= 2		# Client 				->          ProxyClient -> ***  HTTPS  ***  ->          ProxyServer -> WebServer
+# 	QUIC_PROXY_QUIC 	= 3		# Client(QUIC Request) 	->  		ProxyClient -> ***  QUIC   ***  ->          ProxyServer -> WebServer
+# 	HTTP_PROXY_QUIC 	= 4		# Client 				->          ProxyClient -> ***  QUIC   ***  ->          ProxyServer -> WebServer
+
+
+
 class ProxyConfig(Enum):
-	BYPASS_PROXY_HTTPS 	= 0		# Client 				->  (bypass)ProxyClient -> ***  HTTPS  ***  ->  (bypass)ProxyServer -> WebServer
-	BYPASS_PROXY_QUIC 	= 1		# Client(QUIC Request) 	->  (bypass)ProxyClient -> ***  QUIC   ***  ->  (bypass)ProxyServer -> WebServer
-	HTTP_PROXY_HTTPS 	= 2		# Client 				->          ProxyClient -> ***  HTTPS  ***  ->          ProxyServer -> WebServer
-	QUIC_PROXY_QUIC 	= 3		# Client(QUIC Request) 	->  		ProxyClient -> ***  QUIC   ***  ->          ProxyServer -> WebServer
-	HTTP_PROXY_QUIC 	= 4		# Client 				->          ProxyClient -> ***  QUIC   ***  ->          ProxyServer -> WebServer
-
-
-
-class NewProxyConfig(Enum):
 	BYPASS_PROXY 		= 0		# Client 				->  (bypass)ProxyClient -> ***  QUIC  ***  ->  (bypass)ProxyServer -> WebServer
 	QUIC_PROXY 	 		= 1 	# Client 				->          ProxyClient -> ***  QUIC  ***  ->          ProxyServer -> WebServer
 
 
 class ServiceConfig(Enum):
-	NORMAL 	= 0		# No service degredation
+	# NORMAL 	= 0		# No service degredation
 	DA2GC 	= 1		# Direct Air to Ground Connection
-	MSS 	= 2		# Mobile Satellite Service
+	# MSS 	= 2		# Mobile Satellite Service
 
 class TestConfig:
+	# PROXY_PORTS = {
+	# 	ProxyConfig.BYPASS_PROXY_HTTPS 	: 80,
+	# 	ProxyConfig.BYPASS_PROXY_QUIC	: 443,
+	# 	ProxyConfig.HTTP_PROXY_HTTPS 	: 18080,
+	# 	ProxyConfig.QUIC_PROXY_QUIC 	: 18443,
+	# 	ProxyConfig.HTTP_PROXY_QUIC 	: 18443,
+	# }
+
 	PROXY_PORTS = {
-		ProxyConfig.BYPASS_PROXY_HTTPS 	: 80,
-		ProxyConfig.BYPASS_PROXY_QUIC	: 443,
-		ProxyConfig.HTTP_PROXY_HTTPS 	: 18080,
-		ProxyConfig.QUIC_PROXY_QUIC 	: 18443,
-		ProxyConfig.HTTP_PROXY_QUIC 	: 18443,
+		ProxyConfig.BYPASS_PROXY 	    : 80,
+		ProxyConfig.QUIC_PROXY			: 18443,
 	}
 
 	def __init__(self, proxy_config, service_config):
@@ -56,21 +61,14 @@ class TestConfig:
 
 
 	def configure_chrome(self, chrome_path, remote_debugging_port):
-		cmd = f'{chrome_path} --user-data-dir=/tmp/chrome  --headless --remote-debugging-port={remote_debugging_port} '
+		cmd = f'{chrome_path} --user-data-dir=/tmp/chrome  --headless --remote-debugging-port={remote_debugging_port}'
 		proxy_port = self.PROXY_PORTS[self.proxy_config]
 
-		if   self.proxy_config == ProxyConfig.BYPASS_PROXY_HTTPS:
+		if   self.proxy_config == ProxyConfig.BYPASS_PROXY:
 			pass
-		elif self.proxy_config == ProxyConfig.BYPASS_PROXY_QUIC:
-			cmd += f'--enable-quic'
-		elif self.proxy_config == ProxyConfig.HTTP_PROXY_HTTPS:
-			cmd += f'--proxy-server="localhost:{proxy_port}"'
-		elif self.proxy_config == ProxyConfig.QUIC_PROXY_QUIC:
-			cmd += f'--enable-quic --proxy-server="localhost:{proxy_port}"'
-		elif self.proxy_config == ProxyConfig.HTTP_PROXY_QUIC:
-			cmd += f'--proxy-server="localhost:{proxy_port}"'
-		else:
-			raise Exception('Unrecognized proxy configuration provided!')
+		elif self.proxy_config == ProxyConfig.QUIC_PROXY:
+			cmd += f'--proxy-server="localhost:18443"'
+		
 		p  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 		return p
 
@@ -102,7 +100,7 @@ class TestRunner:
 		self.remote_debugging_port = remote_debugging_port
 		self.timeout = timeout
 		self.failure_path = os.path.join(self.output, 'failures.csv')
-
+		ensure_exists(self.failure_path)
 		with open(os.path.join(self.failure_path), 'w') as f:
 			writer = csv.writer(f)
 			writer.writerow(['Website', 'Service Configuration', 'Proxy Configuration', 'Run Index', 'Total Attempts'])
