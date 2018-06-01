@@ -63,14 +63,16 @@ class TestConfig:
 
 
 	def configure_chrome(self, chrome_path, remote_debugging_port):
-		cmd = f'{chrome_path} --user-data-dir=/tmp/chrome  --headless --remote-debugging-port={remote_debugging_port}'
+
+		cmd = f'{chrome_path} --user-data-dir=/tmp/chrome  --headless --remote-debugging-port=9222'
 		proxy_port = self.PROXY_PORTS[self.proxy_config]
 
 		if   self.proxy_config == ProxyConfig.BYPASS_PROXY:
 			pass
 		elif self.proxy_config == ProxyConfig.QUIC_PROXY:
-			cmd += f'--proxy-server="localhost:18443"'
+			cmd += f' --proxy-server="localhost:18443"'
 		
+		print(cmd)
 		p  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 		return p
 
@@ -116,11 +118,12 @@ class TestRunner:
 
 	def run(self, site, test_config, run_index):
 		hostname_parts = urlparse(site).hostname.split('.')
-		hostname = None
+		hostname = None		
 		if len(hostname_parts) > 2:
 			hostname = hostname_parts[1]
 		else:
 			hostname = hostname_parts[0]
+
 
 		service = test_config.service_config.name
 		proxy = test_config.proxy_config.name
@@ -139,7 +142,12 @@ class TestRunner:
 			except:
 				print(f'Failed attempt #{attempt} for test <{service}, {proxy}, {run_index}>')
 
+
 			chrome.kill()
+			if success and os.path.getsize(output_path) <= 274:
+				success = False
+				os.remove(output_path)
+			
 			if success is not True:
 				continue
 			else:
@@ -189,8 +197,8 @@ if __name__ == "__main__":
 	config.read(args.config)
 
 	default_config = config[args.mode]
-	output_dir = os.path.abspath(str(default_config['output']))
-	ensure_exists(output_dir)
+	output_dir = default_config['sites'].split('.')[0]
+	ensure_exists(output_dir  + '/.')
 
 	router_addr = str(default_config['router_addr'])
 	router_user = str(default_config['router_user'])
