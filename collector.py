@@ -16,6 +16,13 @@ class ProxyConfig(Enum):
 	QUIC_PROXY_QUIC 	= 3		# Client(QUIC Request) 	->  		ProxyClient -> ***  QUIC   ***  ->          ProxyServer -> WebServer
 	HTTP_PROXY_QUIC 	= 4		# Client 				->          ProxyClient -> ***  QUIC   ***  ->          ProxyServer -> WebServer
 
+
+
+class NewProxyConfig(Enum):
+	BYPASS_PROXY 		= 0		# Client 				->  (bypass)ProxyClient -> ***  QUIC  ***  ->  (bypass)ProxyServer -> WebServer
+	QUIC_PROXY 	 		= 1 	# Client 				->          ProxyClient -> ***  QUIC  ***  ->          ProxyServer -> WebServer
+
+
 class ServiceConfig(Enum):
 	NORMAL 	= 0		# No service degredation
 	DA2GC 	= 1		# Direct Air to Ground Connection
@@ -49,7 +56,7 @@ class TestConfig:
 
 
 	def configure_chrome(self, chrome_path, remote_debugging_port):
-		cmd = f'{chrome_path} --user-data-dir=/tmp/chrome  --headless --remote-debugging-port={remote_debugging_port} '	
+		cmd = f'{chrome_path} --user-data-dir=/tmp/chrome  --headless --remote-debugging-port={remote_debugging_port} '
 		proxy_port = self.PROXY_PORTS[self.proxy_config]
 
 		if   self.proxy_config == ProxyConfig.BYPASS_PROXY_HTTPS:
@@ -65,7 +72,7 @@ class TestConfig:
 		else:
 			raise Exception('Unrecognized proxy configuration provided!')
 		p  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-		return p	
+		return p
 
 class Router:
 	def __init__(self, address, user, password):
@@ -85,7 +92,7 @@ class TestRunner:
 			max_attempts	maximum number of times to try after a timeout
 			router 			Router class for service emulation
 		"""
-		
+
 		self.websites = websites
 		self.chrome_path = chrome_path
 		self.output = output
@@ -107,7 +114,7 @@ class TestRunner:
 				for run_index in range(repeat):
 					self.run(website, test_config, run_index)
 
-	def run(self, site, test_config, run_index):		
+	def run(self, site, test_config, run_index):
 		hostname_parts = urlparse(site).hostname.split('.')
 		hostname = None
 		if len(hostname_parts) > 2:
@@ -131,7 +138,7 @@ class TestRunner:
 				success = True
 			except:
 				print(f'Failed attempt #{attempt} for test <{service}, {proxy}, {run_index}>')
-			
+
 			sleep(5)
 			chrome.kill()
 			if success is not True:
