@@ -9,6 +9,12 @@ import argparse
 import configparser
 from time import sleep
 import csv
+from time import time as get_time
+import datetime
+import datetime
+
+def time_to_str(time):
+    return datetime.datetime.fromtimestamp(int(time)).strftime('%m-%d %H:%M:%S')
 
 # class ProxyConfig(Enum):
 # 	BYPASS_PROXY_HTTPS 	= 0		# Client 				->  (bypass)ProxyClient -> ***  HTTPS  ***  ->  (bypass)ProxyServer -> WebServer
@@ -105,52 +111,99 @@ class TestRunner:
 		self.remote_debugging_port = remote_debugging_port
 		self.timeout = timeout
 		self.failure_path = os.path.join(self.output, 'failures.csv')
+		self.success_path = os.path.join(self.output, 'successes.csv')
 		ensure_exists(self.failure_path)
-		with open(os.path.join(self.failure_path), 'w') as f:
-			writer = csv.writer(f)
-			writer.writerow(['Website', 'Service Configuration', 'Proxy Configuration', 'Run Index', 'Total Attempts'])
+		ensure_exists(self.success_path)
 
 	def run_tests(self):
-		# Iterate all websites
+		configs = [pc for pc in ProxyConfig]
+		headers = ['Website', 'Timestamp']
+		for c in configs:
+			for i in range(1, self.repeat + 1):
+				headers.append(f'{c.name}_{i} Result')
+				headers.append(f'{c.name}_{i} Start Time')
+				headers.append(f'{c.name}_{i} Failure Time')
+
+		with open(self.failure_path, 'w') as f:
+			writer = csv.writer(f)
+			writer.writerow(headers)
+
+		with open(self.success_path, 'w') as f:
+			writer = csv.writer(f)
+			writer.writerow(['Website', 'Start Time'])
+
 		for i, website in enumerate(self.websites):
+			hostname_parts = urlparse(website).hostname.split('.')
+			hostname = None		
+			if len(hostname_parts) > 2:
+				hostname = hostname_parts[1]
+			else:
+				hostname = hostname_parts[0]
+
+			results = {}
+			success = True
+			start_time = time_to_str(get_time())
+
 			for test_config in self.randomize_configs():
+				config_results = []
 				for run_index in range(repeat):
-					self.run(website, test_config, run_index)
+					r, t_start, t_duration = self.run(website, hostname, test_config, run_index)
+					t_start = time_to_str(t_start)
+					config_results.append((r, t_start, t_duration))
 
-	def run(self, site, test_config, run_index):
-		hostname_parts = urlparse(site).hostname.split('.')
-		hostname = None		
-		if len(hostname_parts) > 2:
-			hostname = hostname_parts[1]
-		else:
-			hostname = hostname_parts[0]
+				success = success and all([cr[0] for cr in config_results])
+				results[test_config.proxy_config] =  config_results
 
+			if success:
+				self.record_success(hostname, start_time)
+			else:
+				self.record_failure(configs, hostname, start_time, results)
 
+	def record_success(self, site, time):
+		with open(self.success_path, 'a') as f:
+			writer = csv.writer(f)
+			writer.writerow([site, time])
+
+	def record_failure(self, proxy_configs, site, time, results):
+		with open(self.failure_path, 'a') as f:
+			writer = csv.writer(f)
+			row = [site, time]
+			for pc in proxy_configs:
+				config_results = results[pc]
+				row.extend(*config_results)
+
+			writer.writerow(row)
+
+	def run(self, site, hostname, test_config, run_index):
 		service = test_config.service_config.name
 		proxy = test_config.proxy_config.name
 		output_path = self.get_run_output_path(hostname, service, proxy, run_index)
 
 		for attempt in range(self.max_attempts):
 			test_config.configure_router(self.router)
+			call("sudo killall -HUP mDNSResponder".split())
+			call("sudo killall mDNSResponderHelper".split())
+			call("sudo dscacheutil -flushcache".split())
+			sleep(1)
 			chrome = test_config.configure_chrome(self.chrome_path, self.remote_debugging_port)
 			sleep(3)
 
-			har_capturer = self.capture_har(site, output_path)
-			sleep(1)
 			success = False
+			t_start = get_time()
+			har_capturer = self.capture_har(site, output_path)
+			
 			try:
 				har_capturer.wait(self.timeout)
 				success = True
 			except:
 				print(f'Failed attempt #{attempt} for test <{service}, {proxy}, {run_index}>')
 
-
+			t_duration = get_time() - t_start
 			har_capturer.kill()
 			sleep(1)
-			#chrome.kill()
-			#os.system("killall -9 "Google Chrome")
 			call(["killall", "-9", "Google Chrome"])
 			sleep(1)
+
 			if os.path.exists(output_path) and os.path.getsize(output_path) <= 275:
 				success = False
 				os.remove(output_path)
@@ -158,12 +211,12 @@ class TestRunner:
 			if success is not True:
 				continue
 			else:
-				return
+				return True, t_start, t_duration
 
-		self.record_test_failure(site, test_config, run_index)
+		return False, t_start, t_duration
 
 	def capture_har(self, site, output_path):
-		cmd = f'node node_modules/chrome-har-capturer/bin/cli.js -o {output_path} {site}'
+		cmd = f'node node_modules/chrome-har-capturer/bin/cli.js -o {output_path} {site} '
 		p  = subprocess.Popen(cmd, shell=True)
 		return p
 
