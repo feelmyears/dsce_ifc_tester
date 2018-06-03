@@ -2,6 +2,7 @@ from enum import Enum
 import itertools
 import random
 import subprocess
+from subprocess import call
 from urllib.parse import urlparse
 import os
 import argparse
@@ -132,9 +133,10 @@ class TestRunner:
 		for attempt in range(self.max_attempts):
 			test_config.configure_router(self.router)
 			chrome = test_config.configure_chrome(self.chrome_path, self.remote_debugging_port)
-			sleep(1)
+			sleep(3)
 
 			har_capturer = self.capture_har(site, output_path)
+			sleep(1)
 			success = False
 			try:
 				har_capturer.wait(self.timeout)
@@ -143,8 +145,13 @@ class TestRunner:
 				print(f'Failed attempt #{attempt} for test <{service}, {proxy}, {run_index}>')
 
 
-			chrome.kill()
-			if success and os.path.getsize(output_path) <= 274:
+			har_capturer.kill()
+			sleep(1)
+			#chrome.kill()
+			#os.system("killall -9 "Google Chrome")
+			call(["killall", "-9", "Google Chrome"])
+			sleep(1)
+			if os.path.exists(output_path) and os.path.getsize(output_path) <= 275:
 				success = False
 				os.remove(output_path)
 			
