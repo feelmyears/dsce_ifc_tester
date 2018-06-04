@@ -71,7 +71,7 @@ class TestConfig:
 
 	def configure_chrome(self, chrome_path, remote_debugging_port):
 
-		cmd = f'{chrome_path} --user-data-dir=/tmp/chrome  --headless --remote-debugging-port=9222'
+		cmd = f'{chrome_path} --user-data-dir=/tmp/chrome  --headless --crash-dumps-dir=/tmp --remote-debugging-port=9222'
 		proxy_port = self.PROXY_PORTS[self.proxy_config]
 
 		if   self.proxy_config == ProxyConfig.BYPASS_PROXY:
@@ -156,7 +156,7 @@ class TestRunner:
 
 			if success:
 				self.record_success(hostname, start_time)
-			else:
+			else: 
 				self.record_failure(configs, hostname, start_time, results)
 
 	def record_success(self, site, time):
@@ -170,7 +170,8 @@ class TestRunner:
 			row = [site, time]
 			for pc in proxy_configs:
 				config_results = results[pc]
-				row.extend(*config_results)
+				for c in config_results:
+					row.extend(c)
 
 			writer.writerow(row)
 
@@ -184,9 +185,9 @@ class TestRunner:
 			call("sudo killall -HUP mDNSResponder".split())
 			call("sudo killall mDNSResponderHelper".split())
 			call("sudo dscacheutil -flushcache".split())
-			sleep(1)
+			
 			chrome = test_config.configure_chrome(self.chrome_path, self.remote_debugging_port)
-			sleep(3)
+			sleep(1)
 
 			success = False
 			t_start = get_time()
@@ -204,7 +205,7 @@ class TestRunner:
 			call(["killall", "-9", "Google Chrome"])
 			sleep(1)
 
-			if os.path.exists(output_path) and os.path.getsize(output_path) <= 275:
+			if os.path.exists(output_path) and os.path.getsize(output_path) <= 5000:
 				success = False
 				os.remove(output_path)
 			
@@ -216,7 +217,7 @@ class TestRunner:
 		return False, t_start, t_duration
 
 	def capture_har(self, site, output_path):
-		cmd = f'node node_modules/chrome-har-capturer/bin/cli.js -o {output_path} {site} '
+		cmd = f'node node_modules/chrome-har-capturer/bin/cli.js -r 3 -o {output_path} {site} '
 		p  = subprocess.Popen(cmd, shell=True)
 		return p
 
