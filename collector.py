@@ -78,7 +78,7 @@ class TestConfig:
 			pass
 		elif self.proxy_config == ProxyConfig.QUIC_PROXY:
 			cmd += f' --proxy-server="localhost:18443"'
-		
+
 		print(cmd)
 		p  = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 		return p
@@ -134,7 +134,7 @@ class TestRunner:
 
 		for i, website in enumerate(self.websites):
 			hostname_parts = urlparse(website).hostname.split('.')
-			hostname = None		
+			hostname = None
 			if len(hostname_parts) > 2:
 				hostname = hostname_parts[1]
 			else:
@@ -156,7 +156,7 @@ class TestRunner:
 
 			if success:
 				self.record_success(hostname, start_time)
-			else: 
+			else:
 				self.record_failure(configs, hostname, start_time, results)
 
 	def record_success(self, site, time):
@@ -185,16 +185,16 @@ class TestRunner:
 			call("sudo killall -HUP mDNSResponder".split())
 			call("sudo killall mDNSResponderHelper".split())
 			call("sudo dscacheutil -flushcache".split())
-			
+
 			chrome = test_config.configure_chrome(self.chrome_path, self.remote_debugging_port)
 			sleep(1)
 
 			success = False
 			t_start = get_time()
 			har_capturer = self.capture_har(site, output_path)
-			
+
 			try:
-				har_capturer.wait(self.timeout)
+				har_capturer.wait()
 				success = True
 			except:
 				print(f'Failed attempt #{attempt} for test <{service}, {proxy}, {run_index}>')
@@ -208,7 +208,7 @@ class TestRunner:
 			if os.path.exists(output_path) and os.path.getsize(output_path) <= 5000:
 				success = False
 				os.remove(output_path)
-			
+
 			if success is not True:
 				continue
 			else:
