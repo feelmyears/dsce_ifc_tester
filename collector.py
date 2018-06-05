@@ -217,7 +217,7 @@ class TestRunner:
 		return False, t_start, t_duration
 
 	def capture_har(self, site, output_path):
-		cmd = f'node node_modules/chrome-har-capturer/bin/cli.js -r 3 -o {output_path} {site} '
+		cmd = f'node node_modules/chrome-har-capturer/bin/cli.js -r 3 -u 300000 -e 1000 -o {output_path} {site} '
 		p  = subprocess.Popen(cmd, shell=True)
 		return p
 

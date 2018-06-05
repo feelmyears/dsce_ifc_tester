@@ -1,17 +1,3 @@
-https://www.microsoft.com/en-us/
-http://www.msn.com/
-http://www.onclickads.net
-https://www.ebay.com
-https://wordpress.com/
-http://www.bing.com/
-https://www.tumblr.com/
-https://stackoverflow.com/
-https://www.aliexpress.com/
-https://www.apple.com/
-https://www.netflix.com/
-https://www.pinterest.com/
-https://www.paypal.com/us/home
-https://imgur.com/
 https://www.imdb.com/
 https://www.naver.com/
 https://mail.ru
