@@ -112,10 +112,12 @@ class TestRunner:
 		self.timeout = timeout
 		self.failure_path = os.path.join(self.output, 'failures.csv')
 		self.success_path = os.path.join(self.output, 'successes.csv')
+		self.skipped_path = os.path.join(self.output, 'skipped.csv')
 		ensure_exists(self.failure_path)
 		ensure_exists(self.success_path)
 
 	def run_tests(self):
+		hostnames = set()
 		configs = [pc for pc in ProxyConfig]
 		headers = ['Website', 'Timestamp']
 		for c in configs:
@@ -132,13 +134,26 @@ class TestRunner:
 			writer = csv.writer(f)
 			writer.writerow(['Website', 'Start Time'])
 
+		run_time = get_time()
+
 		for i, website in enumerate(self.websites):
+			if (get_time() - run_time) > 60*60:
+				sleep(60*1)
+				run_time = get_time()
+
 			hostname_parts = urlparse(website).hostname.split('.')
 			hostname = None
 			if len(hostname_parts) > 2:
 				hostname = hostname_parts[1]
 			else:
 				hostname = hostname_parts[0]
+
+			if hostname in hostnames:
+				with open(self.skipped_path, 'a') as f:
+					f.write(f'{website}\n')
+				continue
+
+			hostnames.add(hostname)
 
 			results = {}
 			success = True
