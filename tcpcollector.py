@@ -26,8 +26,12 @@ def time_to_str(time):
 
 
 class ProxyConfig(Enum):
-	BYPASS_PROXY 		= 0		# Client 				->  (bypass)ProxyClient -> ***  QUIC  ***  ->  (bypass)ProxyServer -> WebServer
-	QUIC_PROXY 	 		= 1 	# Client 				->          ProxyClient -> ***  QUIC  ***  ->          ProxyServer -> WebServer
+	#BYPASS_PROXY 		= 0		# Client 				->  (bypass)ProxyClient -> ***  QUIC  ***  ->  (bypass)ProxyServer -> WebServer
+	#QUIC_PROXY 	 		= 1 	# Client 				->          ProxyClient -> ***  QUIC  ***  ->          ProxyServer -> WebServer
+	HTTPS_PROXY			= 0		# Client 				->          ProxyClient -> ***  HTTPS  ***  ->          ProxyServer -> WebServer
+
+
+
 
 
 class ServiceConfig(Enum):
@@ -45,8 +49,9 @@ class TestConfig:
 	# }
 
 	PROXY_PORTS = {
-		ProxyConfig.BYPASS_PROXY 	    : 80,
-		ProxyConfig.QUIC_PROXY			: 18443,
+		#ProxyConfig.BYPASS_PROXY 	    : 80,
+		#ProxyConfig.QUIC_PROXY			: 18443,
+		ProxyConfig.HTTPS_PROXY			: 18080,
 	}
 
 	def __init__(self, proxy_config, service_config):
